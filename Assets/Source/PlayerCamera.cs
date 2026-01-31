@@ -10,7 +10,7 @@ public class PlayerCamera : MonoBehaviour
     const float MIN_SHAKE_DIST = 0.1f;
     const float MAX_SHAKE_DIST = 1f;
 
-    private Vector3 DEFAULT_CAMERA_POS = new Vector3(0, 2.25f, -6f);
+    private Vector3 DEFAULT_CAMERA_POS = new Vector3(0, 4f, -8.5f);
 
     private float mouse_x = 0f;
     private float mouse_y = 0f;
@@ -66,7 +66,6 @@ public class PlayerCamera : MonoBehaviour
         mouse_x = Input.GetAxisRaw("Mouse X");
         mouse_y = Input.GetAxisRaw("Mouse Y");
 
-        /*
         pitch_raw += -mouse_y * sensitivity;
         pitch_raw = Mathf.Clamp(pitch_raw, -CAM_MAX_PITCH_ANGLE, CAM_MAX_PITCH_ANGLE);
         yaw_raw += mouse_x * sensitivity;
@@ -82,14 +81,18 @@ public class PlayerCamera : MonoBehaviour
         pitch = pitch_raw + pitch_add;
         yaw = yaw_raw + yaw_add;
         roll = roll_raw + roll_add;
-        */
 
         float follow_dist = DEFAULT_CAMERA_POS.z;
         Vector3 player_pos = player.transform.position;
 
-        //orbit_offset = Quaternion.AngleAxis(mouse_x * sensitivity, Vector3.up) * Quaternion.AngleAxis(-mouse_y * sensitivity, Vector3.right) * orbit_offset;
+        Quaternion rotation = Quaternion.Euler(pitch, yaw, 0f);
+        Vector3 offset = rotation * new Vector3(0f, 0f, DEFAULT_CAMERA_POS.z);
+        transform.position = player_pos + offset;
+
+        //orbit_offset = Quaternion.AngleAxis(mouse_x * sensitivity, Vector3.up) * Quaternion.AngleAxis(mouse_y * sensitivity, Vector3.right) * orbit_offset;
         //transform.position = player_pos + orbit_offset;
 
+        /*
         // Calculate default camera position relative to the player's facing direction
         target_position = player_pos + new Vector3(
                 -player.transform.forward.x * -DEFAULT_CAMERA_POS.z,
@@ -103,14 +106,14 @@ public class PlayerCamera : MonoBehaviour
                 target_position,
                 Vector3.Distance(target_position, transform.position) * Time.deltaTime * 2.5f
             );
+        */
 
         Vector3 look_target = player_pos + new Vector3(0, 1f, 0);
         transform.LookAt(look_target);
 
-
-        Vector3 player_vel = player.GetComponent<Rigidbody>().linearVelocity;
-        float fov_scale = (player_vel.magnitude * 0.005f) + 1f;
-        GetComponent<Camera>().fieldOfView = CAM_BASE_FOV * fov_scale;
+        //Vector3 player_vel = player.GetComponent<Rigidbody>().linearVelocity;
+        //float fov_scale = (player_vel.magnitude * 0.005f) + 1f;
+        //GetComponent<Camera>().fieldOfView = CAM_BASE_FOV * fov_scale;
     }
 
     private void FixedUpdate()
