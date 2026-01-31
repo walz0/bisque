@@ -12,7 +12,7 @@ public class Player : MonoBehaviour
 
     const float MAX_VELOCITY = 10f;
     const float MOVE_SPEED_ROLL = 10000f;
-    const float MOVE_SPEED_WALK = 4000f;
+    const float MOVE_SPEED_WALK = 150f;
     const float ROT_SPEED = 1500f;
     const float MOVE_ACCEL = 1f;
     const float SLIDE_SPEED = 100f;
@@ -29,12 +29,16 @@ public class Player : MonoBehaviour
     private int slideTimer = -1;
 
     private Rigidbody rb;
+    [SerializeField]
+    private GameObject lobsterObject;
 
     void Start()
     {
         inputVector = new Vector2();
         rb = GetComponent<Rigidbody>();
         playerCamera = FindFirstObjectByType<PlayerCamera>();
+
+        lobsterObject.transform.parent = null;
 
         SetState(PlayerState.WALK);
     }
@@ -44,6 +48,9 @@ public class Player : MonoBehaviour
         inputVector.x = Input.GetAxisRaw("Horizontal");
         inputVector.y = Input.GetAxisRaw("Vertical");
         inputVector.Normalize();
+
+        //playerCamera.SetTargetRoll(inputVector.x * 10f);
+        //playerCamera.SetTargetPitch(inputVector.y * 10f);
 
         // Restart level
         if (Input.GetKeyDown(KeyCode.R))
@@ -89,6 +96,14 @@ public class Player : MonoBehaviour
     {
         switch(newState)
         {
+            case PlayerState.WALK:
+                rb.freezeRotation = true;
+                rb.linearDamping = 10f;
+                break;
+            case PlayerState.ROLL:
+                rb.freezeRotation = false;
+                rb.linearDamping = 0.1f;
+                break;
             case PlayerState.SLIDE:
                 slideTimer = SLIDE_TIME;
                 break;
@@ -156,23 +171,20 @@ public class Player : MonoBehaviour
 
     void Walk()
     {
-        rb.freezeRotation = true;
         transform.rotation = Quaternion.identity;
 
         Vector3 forward = GetCamForward();
         forward.y = 0;
         Vector3 right = GetCamRight();
         right.y = 0;
-        rb.AddForce(forward * inputVector.y * MOVE_SPEED_WALK * Time.deltaTime);
-        rb.AddForce(right * inputVector.x * MOVE_SPEED_WALK * Time.deltaTime);
+        rb.AddForce(forward * inputVector.y * MOVE_SPEED_WALK * Time.deltaTime, ForceMode.VelocityChange);
+        rb.AddForce(right * inputVector.x * MOVE_SPEED_WALK * Time.deltaTime, ForceMode.VelocityChange);
 
         rb.linearVelocity = Vector3.ClampMagnitude(rb.linearVelocity, MAX_VELOCITY);
     }
 
     void Roll()
     {
-        rb.freezeRotation = false;
-
         Vector3 forward = GetCamForward();
         forward.y = 0;
         Vector3 right = GetCamRight();
@@ -184,6 +196,9 @@ public class Player : MonoBehaviour
         //transform.Rotate(Vector3.up * inputVector.x * ROTATE_SPEED * Time.deltaTime);
 
         rb.linearVelocity = Vector3.ClampMagnitude(rb.linearVelocity, MAX_VELOCITY);
+
+        lobsterObject.transform.forward = forward;
+        lobsterObject.transform.position = transform.position + Vector3.up * 1.6f;
     }
 
     public bool IsSliding()

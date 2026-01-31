@@ -85,7 +85,7 @@ public class PlayerCamera : MonoBehaviour
         float follow_dist = DEFAULT_CAMERA_POS.z;
         Vector3 player_pos = player.transform.position;
 
-        Quaternion rotation = Quaternion.Euler(pitch, yaw, 0f);
+        Quaternion rotation = Quaternion.Euler(pitch, yaw, roll);
         Vector3 offset = rotation * new Vector3(0f, 0f, DEFAULT_CAMERA_POS.z);
         transform.position = player_pos + offset;
 
