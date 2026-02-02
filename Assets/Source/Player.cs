@@ -19,7 +19,7 @@ public class Player : MonoBehaviour
     const float ROT_SPEED = 1500f;
     const float JUMP_SPEED = 20f;
     const float MOVE_ACCEL = 1f;
-    const float SLIDE_SPEED = 100f;
+    const float SLIDE_SPEED = 50f;
     const float ANGULAR_DRAG_FLAT = 3f;
     const float ANGULAR_DRAG_SLOPE = 0f;
     const float SLOPE_ANGLE = 5f;
@@ -64,6 +64,21 @@ public class Player : MonoBehaviour
         SetState(PlayerState.ROLL);
     }
 
+    void OnGUI()
+    {
+        //GUI.skin.font = consolas;
+        GUI.contentColor = new Color(0, 255, 0);
+
+        float fps = 1f / Time.deltaTime;
+        GUI.Label(new Rect(10, Screen.height - 30f, 200, 20), "fps: " + fps.ToString("0.00"));
+        if (rb)
+        {
+            float ups = rb.linearVelocity.magnitude;
+            GUI.Label(new Rect(10, Screen.height - 50f, 200, 20), "ups: " + ups.ToString("0.00"));
+        }
+    }
+
+
     void ProcessInput()
     {
         inputVector.x = Input.GetAxisRaw("Horizontal");
@@ -92,14 +107,13 @@ public class Player : MonoBehaviour
         }
         */
 
-        /*
         // Slide
-        if (Input.GetKeyDown(KeyCode.Space))
+        if (Input.GetKeyDown(KeyCode.LeftShift))
         {
             // Slide if there is sufficient butter
-            SetState(PlayerState.SLIDE);
+            //SetState(PlayerState.SLIDE);
+            Slide();
         }
-        */
 
         if (Input.GetKeyDown(KeyCode.Space))
         {
@@ -135,6 +149,7 @@ public class Player : MonoBehaviour
                 rb.linearDamping = 0.1f;
                 break;
             case PlayerState.SLIDE:
+                rb.freezeRotation = true;
                 slideTimer = SLIDE_TIME;
                 break;
         }
@@ -161,8 +176,18 @@ public class Player : MonoBehaviour
         Vector3 forward = GetForward();
         lobsterObject.transform.forward = forward;
 
-        const float lobsterHeight = 1.4f;
-        lobsterObject.transform.position = transform.position + Vector3.up * lobsterHeight;
+
+        if (GetState() == PlayerState.SLIDE)
+        {
+            ballObject.SetActive(false);
+            lobsterObject.transform.position = transform.position;
+        }
+        else
+        {
+            ballObject.SetActive(true);
+            const float lobsterBallHeight = 1.4f;
+            lobsterObject.transform.position = transform.position + Vector3.up * lobsterBallHeight;
+        }
     }
 
     void UpdateSlopeDrag()
@@ -190,7 +215,7 @@ public class Player : MonoBehaviour
                     Roll();
                     break;
                 case PlayerState.SLIDE:
-                    Slide();
+                    //Slide();
                     break;
             }
         }
@@ -269,9 +294,12 @@ public class Player : MonoBehaviour
 
     void Slide()
     {
+        SetState(PlayerState.SLIDE);
+        slideTimer = SLIDE_TIME;
+        rb.linearVelocity = Vector3.zero;
         Vector3 forward = GetCamForward();
         forward.y = 0;
-        rb.AddForce(forward * SLIDE_SPEED * Time.deltaTime, ForceMode.Impulse);
+        rb.AddForce(forward * SLIDE_SPEED, ForceMode.Impulse);
     }
     
     bool IsGrounded()
