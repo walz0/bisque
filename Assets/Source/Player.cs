@@ -12,7 +12,7 @@ public class Player : MonoBehaviour
         SLIDE
     }
 
-    const float MAX_VELOCITY = 10f;
+    const float MAX_VELOCITY = 50f;
     const float MOVE_SPEED_ROLL = 500f;
     const float MOVE_SPEED_ROLL_STRAFE = 750f;
     const float MOVE_SPEED_WALK = 250f;
@@ -246,12 +246,15 @@ public class Player : MonoBehaviour
         Vector3 forward = GetForward();
         Vector3 right = GetRight();
         rb.AddForce(forward * inputVector.y * MOVE_SPEED_ROLL * Time.deltaTime);
+
+        float forwardSpeed = Vector3.Dot(rb.linearVelocity, forward) * rb.linearVelocity.magnitude;
+        float strafeMultiplier = forwardSpeed * 0.01f; // Make turning stronger at higher velocities
         rb.AddForce(right * inputVector.x * MOVE_SPEED_ROLL_STRAFE * Time.deltaTime);
         rb.AddTorque(forward * -inputVector.x * ROT_SPEED * Time.deltaTime);
         rb.AddTorque(right * inputVector.y * ROT_SPEED * Time.deltaTime);
         //transform.Rotate(Vector3.up * inputVector.x * ROTATE_SPEED * Time.deltaTime);
 
-        //rb.linearVelocity = Vector3.ClampMagnitude(rb.linearVelocity, MAX_VELOCITY);
+        rb.linearVelocity = Vector3.ClampMagnitude(rb.linearVelocity, MAX_VELOCITY);
     }
 
     public bool IsSliding()

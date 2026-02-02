@@ -65,7 +65,7 @@ public class PlayerCamera : MonoBehaviour
             Cursor.lockState = CursorLockMode.Locked;
         }
 
-        const float orbitSpeed = 200f;
+        const float orbitSpeed = 150f;
         orbit_angle += -player.GetInputVector().x * orbitSpeed * Time.deltaTime;
 
         float follow_dist = Mathf.Abs(DEFAULT_CAMERA_POS.z);
