@@ -10,7 +10,7 @@ public class PlayerCamera : MonoBehaviour
     const float MIN_SHAKE_DIST = 0.1f;
     const float MAX_SHAKE_DIST = 1f;
 
-    private Vector3 DEFAULT_CAMERA_POS = new Vector3(0, 4f, -8.5f);
+    private Vector3 DEFAULT_CAMERA_POS = new Vector3(0, 4f, -6.5f);
 
     private float mouse_x = 0f;
     private float mouse_y = 0f;
@@ -30,6 +30,8 @@ public class PlayerCamera : MonoBehaviour
     private float pitch_target = 0f;
     private float yaw_target = 0f;
     private float roll_target = 0f;
+
+    private float orbit_angle = 0f;
 
     private Vector3 orbit_offset;
     private Vector3 target_position;
@@ -63,6 +65,22 @@ public class PlayerCamera : MonoBehaviour
             Cursor.lockState = CursorLockMode.Locked;
         }
 
+        const float orbitSpeed = 200f;
+        orbit_angle += -player.GetInputVector().x * orbitSpeed * Time.deltaTime;
+
+        float follow_dist = Mathf.Abs(DEFAULT_CAMERA_POS.z);
+        float rad = orbit_angle * Mathf.Deg2Rad;
+        Vector3 offset = new Vector3(
+            Mathf.Cos(rad),
+            0f,
+            Mathf.Sin(rad)
+        ) * follow_dist;
+
+        Vector3 player_pos = player.transform.position;
+        transform.position = Vector3.Lerp(transform.position, player_pos - offset + Vector3.up * 3f, Time.deltaTime * 10f);
+        transform.LookAt(player_pos + Vector3.up * 1.6f);
+
+        /*
         mouse_x = Input.GetAxisRaw("Mouse X");
         mouse_y = Input.GetAxisRaw("Mouse Y");
 
@@ -82,34 +100,38 @@ public class PlayerCamera : MonoBehaviour
         yaw = yaw_raw + yaw_add;
         roll = roll_raw + roll_add;
 
-        float follow_dist = DEFAULT_CAMERA_POS.z;
+        float follow_dist = Mathf.Abs(DEFAULT_CAMERA_POS.z);
         Vector3 player_pos = player.transform.position;
-
-        Quaternion rotation = Quaternion.Euler(pitch, yaw, roll);
-        Vector3 offset = rotation * new Vector3(0f, 0f, DEFAULT_CAMERA_POS.z);
-        transform.position = player_pos + offset;
-
-        //orbit_offset = Quaternion.AngleAxis(mouse_x * sensitivity, Vector3.up) * Quaternion.AngleAxis(mouse_y * sensitivity, Vector3.right) * orbit_offset;
-        //transform.position = player_pos + orbit_offset;
-
-        /*
-        // Calculate default camera position relative to the player's facing direction
-        target_position = player_pos + new Vector3(
-                -player.transform.forward.x * -DEFAULT_CAMERA_POS.z,
-                DEFAULT_CAMERA_POS.y,
-                -player.transform.forward.z * -DEFAULT_CAMERA_POS.z
-            );
-
-        // Lerp camera toward target position
-        transform.position = Vector3.Lerp(
-                transform.position,
-                target_position,
-                Vector3.Distance(target_position, transform.position) * Time.deltaTime * 2.5f
-            );
+        float dist_to_player = Vector3.Distance(transform.position, player_pos);
         */
 
-        Vector3 look_target = player_pos + new Vector3(0, 1f, 0);
-        transform.LookAt(look_target);
+
+
+        /*
+         * - Take the camera's initial forward vector and use it to place the camera behind the player
+         * - Set the camera follow_dist away from the player
+         * - Look at player
+        */
+
+        /*
+        const float lobsterHeight = 1.4f;
+        transform.LookAt(player_pos + Vector3.up * lobsterHeight);
+
+        //if (dist_to_player > follow_dist)
+        {
+            Vector3 cam_forward_flat = new Vector3(transform.forward.x, 0, transform.forward.z);
+            transform.position = player_pos + -Vector3.forward * follow_dist + Vector3.up * DEFAULT_CAMERA_POS.y;
+        }
+        */
+
+        //Quaternion rotation = Quaternion.Euler(pitch, yaw, roll);
+        //Vector3 offset = rotation * new Vector3(0f, 0f, DEFAULT_CAMERA_POS.z);
+        //transform.position = player_pos + offset;
+
+
+        //transform.position = Vector3.Lerp(transform.position, player_pos + offset, Time.deltaTime);
+
+        //Vector3 look_target = new Vector3(player_pos.x, player.GetLobsterPos().y + 0.5f, player_pos.z);
 
         //Vector3 player_vel = player.GetComponent<Rigidbody>().linearVelocity;
         //float fov_scale = (player_vel.magnitude * 0.005f) + 1f;
@@ -159,5 +181,10 @@ public class PlayerCamera : MonoBehaviour
     public void SetTargetRoll(float rollTarget)
     {
         roll_target = rollTarget;
+    }
+
+    public float GetOrbitAngle()
+    {
+        return orbit_angle;
     }
 }

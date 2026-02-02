@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Playables;
 using UnityEngine.SceneManagement;
 
 public class Player : MonoBehaviour
@@ -7,15 +8,21 @@ public class Player : MonoBehaviour
     {
         WALK,
         ROLL,
+        AIRBORNE,
         SLIDE
     }
 
     const float MAX_VELOCITY = 10f;
-    const float MOVE_SPEED_ROLL = 10000f;
-    const float MOVE_SPEED_WALK = 150f;
+    const float MOVE_SPEED_ROLL = 500f;
+    const float MOVE_SPEED_ROLL_STRAFE = 750f;
+    const float MOVE_SPEED_WALK = 250f;
     const float ROT_SPEED = 1500f;
+    const float JUMP_SPEED = 20f;
     const float MOVE_ACCEL = 1f;
     const float SLIDE_SPEED = 100f;
+    const float ANGULAR_DRAG_FLAT = 3f;
+    const float ANGULAR_DRAG_SLOPE = 0f;
+    const float SLOPE_ANGLE = 5f;
     const int SLIDE_TIME = 30;
     const float ROTATE_SPEED = 250f;
     const float GRAVITY = 50f;
@@ -23,6 +30,8 @@ public class Player : MonoBehaviour
     private PlayerState currentState;
     private float throttle = 0;
     private bool grounded = false;
+    private Vector3 groundPoint;
+    private Vector3 groundNormal;
     private Vector2 inputVector;
     private PlayerCamera playerCamera;
 
@@ -31,16 +40,28 @@ public class Player : MonoBehaviour
     private Rigidbody rb;
     [SerializeField]
     private GameObject lobsterObject;
+    [SerializeField]
+    private GameObject ballObject;
+    private GroundCheck groundCheck;
+    private Animator anim;
 
     void Start()
     {
         inputVector = new Vector2();
         rb = GetComponent<Rigidbody>();
         playerCamera = FindFirstObjectByType<PlayerCamera>();
+        groundCheck = GetComponentInChildren<GroundCheck>();
+        anim = GetComponentInChildren<Animator>();
 
+        InitPlayer();
+    }
+
+    void InitPlayer()
+    {
         lobsterObject.transform.parent = null;
-
-        SetState(PlayerState.WALK);
+        groundCheck.transform.parent = null;
+        groundCheck.SetPlayer(this);
+        SetState(PlayerState.ROLL);
     }
 
     void ProcessInput()
@@ -48,9 +69,6 @@ public class Player : MonoBehaviour
         inputVector.x = Input.GetAxisRaw("Horizontal");
         inputVector.y = Input.GetAxisRaw("Vertical");
         inputVector.Normalize();
-
-        //playerCamera.SetTargetRoll(inputVector.x * 10f);
-        //playerCamera.SetTargetPitch(inputVector.y * 10f);
 
         // Restart level
         if (Input.GetKeyDown(KeyCode.R))
@@ -60,6 +78,7 @@ public class Player : MonoBehaviour
         }
 
         // Roll
+        /*
         if (Input.GetKeyDown(KeyCode.LeftShift))
         {
             if (GetState() != PlayerState.ROLL)
@@ -71,12 +90,23 @@ public class Player : MonoBehaviour
                 SetState(PlayerState.WALK);
             }
         }
+        */
 
+        /*
         // Slide
         if (Input.GetKeyDown(KeyCode.Space))
         {
             // Slide if there is sufficient butter
             SetState(PlayerState.SLIDE);
+        }
+        */
+
+        if (Input.GetKeyDown(KeyCode.Space))
+        {
+            if (IsGrounded())
+            {
+                Jump();
+            }
         }
     }
 
@@ -121,12 +151,33 @@ public class Player : MonoBehaviour
         return currentState;
     }
 
+    void UpdateAnimator()
+    {
+        anim.SetFloat("ball_vel", rb.linearVelocity.magnitude / MAX_VELOCITY);
+    }
+
+    void UpdateVisuals()
+    {
+        Vector3 forward = GetForward();
+        lobsterObject.transform.forward = forward;
+
+        const float lobsterHeight = 1.4f;
+        lobsterObject.transform.position = transform.position + Vector3.up * lobsterHeight;
+    }
+
+    void UpdateSlopeDrag()
+    {
+        float angle = Vector3.Angle(groundNormal, Vector3.up);
+        rb.angularDamping = angle > SLOPE_ANGLE ? ANGULAR_DRAG_SLOPE : ANGULAR_DRAG_FLAT;
+    }
+
     void Update()
     {
         ProcessInput();
+        CheckGround();
+        UpdateVisuals();
+        UpdateAnimator();
         ApplyGravity();
-
-        print(IsGrounded());
 
         if (IsGrounded())
         {
@@ -142,7 +193,6 @@ public class Player : MonoBehaviour
                     Slide();
                     break;
             }
-
         }
     }
 
@@ -169,14 +219,22 @@ public class Player : MonoBehaviour
         rb.AddForce(Vector3.down * GRAVITY * Time.deltaTime, ForceMode.Impulse);
     }
 
+    bool IsRolling()
+    {
+        return GetState() == PlayerState.ROLL;
+    }
+
+    void Jump()
+    {
+        rb.AddForce(Vector3.up * JUMP_SPEED, ForceMode.Impulse);
+    }
+
     void Walk()
     {
         transform.rotation = Quaternion.identity;
 
-        Vector3 forward = GetCamForward();
-        forward.y = 0;
-        Vector3 right = GetCamRight();
-        right.y = 0;
+        Vector3 forward = GetForward();
+        Vector3 right = GetRight();
         rb.AddForce(forward * inputVector.y * MOVE_SPEED_WALK * Time.deltaTime, ForceMode.VelocityChange);
         rb.AddForce(right * inputVector.x * MOVE_SPEED_WALK * Time.deltaTime, ForceMode.VelocityChange);
 
@@ -185,20 +243,15 @@ public class Player : MonoBehaviour
 
     void Roll()
     {
-        Vector3 forward = GetCamForward();
-        forward.y = 0;
-        Vector3 right = GetCamRight();
-        right.y = 0;
+        Vector3 forward = GetForward();
+        Vector3 right = GetRight();
         rb.AddForce(forward * inputVector.y * MOVE_SPEED_ROLL * Time.deltaTime);
-        rb.AddForce(right * inputVector.x * MOVE_SPEED_ROLL * Time.deltaTime);
+        rb.AddForce(right * inputVector.x * MOVE_SPEED_ROLL_STRAFE * Time.deltaTime);
         rb.AddTorque(forward * -inputVector.x * ROT_SPEED * Time.deltaTime);
         rb.AddTorque(right * inputVector.y * ROT_SPEED * Time.deltaTime);
         //transform.Rotate(Vector3.up * inputVector.x * ROTATE_SPEED * Time.deltaTime);
 
-        rb.linearVelocity = Vector3.ClampMagnitude(rb.linearVelocity, MAX_VELOCITY);
-
-        lobsterObject.transform.forward = forward;
-        lobsterObject.transform.position = transform.position + Vector3.up * 1.6f;
+        //rb.linearVelocity = Vector3.ClampMagnitude(rb.linearVelocity, MAX_VELOCITY);
     }
 
     public bool IsSliding()
@@ -217,16 +270,51 @@ public class Player : MonoBehaviour
         forward.y = 0;
         rb.AddForce(forward * SLIDE_SPEED * Time.deltaTime, ForceMode.Impulse);
     }
-
+    
     bool IsGrounded()
     {
         return grounded;
+    }
+
+    void CheckGround()
+    {
+        const float checkDist = 0.5f;
+        RaycastHit hit;
+        if (Physics.Raycast(transform.position + Vector3.down, Vector3.down, out hit, checkDist))
+        {
+            groundNormal = hit.normal;
+            groundPoint = hit.point;
+            grounded = true;
+            SetState(PlayerState.ROLL);
+        }
+        else
+        {
+            grounded = false;
+            SetState(PlayerState.AIRBORNE);
+        }
     }
 
     public Vector2 GetInputVector()
     {
         return inputVector;
     }
+
+    private Vector3 GetForward()
+    {
+        float orbitAngle = playerCamera.GetOrbitAngle();
+        return new Vector3(
+                Mathf.Cos(orbitAngle * Mathf.Deg2Rad),
+                0f,
+                Mathf.Sin(orbitAngle * Mathf.Deg2Rad)
+            ); 
+    } 
+    
+    private Vector3 GetRight()
+    {
+        Vector3 right = GetCamRight();
+        right.y = 0;
+        return right;
+    } 
 
     private Vector3 GetCamForward()
     {
@@ -249,5 +337,10 @@ public class Player : MonoBehaviour
     public void SetGrounded(bool is_grounded)
     {
         grounded = is_grounded;
+    }
+
+    public Vector3 GetLobsterPos()
+    {
+        return lobsterObject.transform.position;
     }
 }
