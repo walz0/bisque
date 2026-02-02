@@ -68,7 +68,7 @@ public class PlayerCamera : MonoBehaviour
         const float orbitSpeed = 150f;
         orbit_angle += -player.GetInputVector().x * orbitSpeed * Time.deltaTime;
 
-        float follow_dist = Mathf.Abs(DEFAULT_CAMERA_POS.z);
+        float follow_dist = player.GetState() == Player.PlayerState.SLIDE ? Mathf.Abs(DEFAULT_CAMERA_POS.z) * 0.75f : Mathf.Abs(DEFAULT_CAMERA_POS.z);
         float rad = orbit_angle * Mathf.Deg2Rad;
         Vector3 offset = new Vector3(
             Mathf.Cos(rad),

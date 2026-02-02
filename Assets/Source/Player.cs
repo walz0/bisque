@@ -12,14 +12,14 @@ public class Player : MonoBehaviour
         SLIDE
     }
 
-    const float MAX_VELOCITY = 50f;
+    const float MAX_VELOCITY = 70f;
     const float MOVE_SPEED_ROLL = 500f;
     const float MOVE_SPEED_ROLL_STRAFE = 750f;
     const float MOVE_SPEED_WALK = 250f;
     const float ROT_SPEED = 1500f;
     const float JUMP_SPEED = 20f;
     const float MOVE_ACCEL = 1f;
-    const float SLIDE_SPEED = 50f;
+    const float SLIDE_SPEED = 20f;
     const float ANGULAR_DRAG_FLAT = 3f;
     const float ANGULAR_DRAG_SLOPE = 0f;
     const float SLOPE_ANGLE = 5f;
@@ -76,6 +76,7 @@ public class Player : MonoBehaviour
             float ups = rb.linearVelocity.magnitude;
             GUI.Label(new Rect(10, Screen.height - 50f, 200, 20), "ups: " + ups.ToString("0.00"));
         }
+        GUI.Label(new Rect(10, Screen.height - 70f, 200, 20), "state: " + currentState.ToString());
     }
 
 
@@ -161,7 +162,7 @@ public class Player : MonoBehaviour
         currentState = newState;
     }
 
-    PlayerState GetState()
+    public PlayerState GetState()
     {
         return currentState;
     }
@@ -296,7 +297,7 @@ public class Player : MonoBehaviour
     {
         SetState(PlayerState.SLIDE);
         slideTimer = SLIDE_TIME;
-        rb.linearVelocity = Vector3.zero;
+        //rb.linearVelocity = Vector3.zero;
         Vector3 forward = GetCamForward();
         forward.y = 0;
         rb.AddForce(forward * SLIDE_SPEED, ForceMode.Impulse);
@@ -315,13 +316,20 @@ public class Player : MonoBehaviour
         {
             groundNormal = hit.normal;
             groundPoint = hit.point;
-            grounded = true;
-            SetState(PlayerState.ROLL);
+
+            if (grounded == false)
+            {
+                grounded = true;
+                SetState(PlayerState.ROLL);
+            }
         }
         else
         {
-            grounded = false;
-            SetState(PlayerState.AIRBORNE);
+            if (grounded == true)
+            {
+                grounded = false;
+                SetState(PlayerState.AIRBORNE);
+            }
         }
     }
 
