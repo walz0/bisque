@@ -10,7 +10,7 @@ public class PlayerCamera : MonoBehaviour
     const float MIN_SHAKE_DIST = 0.1f;
     const float MAX_SHAKE_DIST = 1f;
 
-    private Vector3 DEFAULT_CAMERA_POS = new Vector3(0, 4f, -6.5f);
+    private Vector3 DEFAULT_CAMERA_POS = new Vector3(0, 4f, -5.5f);
 
     private float mouse_x = 0f;
     private float mouse_y = 0f;
@@ -31,7 +31,7 @@ public class PlayerCamera : MonoBehaviour
     private float yaw_target = 0f;
     private float roll_target = 0f;
 
-    private float orbit_angle = 0f;
+    private float orbit_angle = 90f;
 
     private Vector3 orbit_offset;
     private Vector3 target_position;
@@ -68,7 +68,8 @@ public class PlayerCamera : MonoBehaviour
         const float orbitSpeed = 150f;
         orbit_angle += -player.GetInputVector().x * orbitSpeed * Time.deltaTime;
 
-        float follow_dist = player.GetState() == Player.PlayerState.SLIDE ? Mathf.Abs(DEFAULT_CAMERA_POS.z) * 0.75f : Mathf.Abs(DEFAULT_CAMERA_POS.z);
+        float follow_dist = player.GetState() == Player.PlayerState.SLIDE ? 
+                            Mathf.Abs(DEFAULT_CAMERA_POS.z) * 0.75f : Mathf.Abs(DEFAULT_CAMERA_POS.z);
         float rad = orbit_angle * Mathf.Deg2Rad;
         Vector3 offset = new Vector3(
             Mathf.Cos(rad),
@@ -77,7 +78,8 @@ public class PlayerCamera : MonoBehaviour
         ) * follow_dist;
 
         Vector3 player_pos = player.transform.position;
-        transform.position = Vector3.Lerp(transform.position, player_pos - offset + Vector3.up * 3f, Time.deltaTime * 10f);
+        transform.position = Vector3.Lerp(transform.position, player_pos - offset + Vector3.up * 3f, Time.deltaTime * 9f);
+        //transform.position = Vector3.Lerp(transform.position, player_pos + player, Time.deltaTime * 9f);
         transform.LookAt(player_pos + Vector3.up * 1.6f);
 
         /*
@@ -133,8 +135,8 @@ public class PlayerCamera : MonoBehaviour
 
         //Vector3 look_target = new Vector3(player_pos.x, player.GetLobsterPos().y + 0.5f, player_pos.z);
 
-        //Vector3 player_vel = player.GetComponent<Rigidbody>().linearVelocity;
-        //float fov_scale = (player_vel.magnitude * 0.005f) + 1f;
+        //Vector3 player_vel = Vector3.ClampMagnitude(player.GetComponent<Rigidbody>().linearVelocity, 10f);
+        //float fov_scale = (player_vel.magnitude * 0.05f) + 1f;
         //GetComponent<Camera>().fieldOfView = CAM_BASE_FOV * fov_scale;
     }
 

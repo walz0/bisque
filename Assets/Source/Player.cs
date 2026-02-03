@@ -13,17 +13,17 @@ public class Player : MonoBehaviour
     }
 
     const float MAX_VELOCITY = 70f;
-    const float MOVE_SPEED_ROLL = 500f;
-    const float MOVE_SPEED_ROLL_STRAFE = 750f;
+    const float MOVE_SPEED_ROLL = 600f;
+    const float MOVE_SPEED_ROLL_STRAFE = 850f;
     const float MOVE_SPEED_WALK = 250f;
     const float ROT_SPEED = 1500f;
     const float JUMP_SPEED = 20f;
     const float MOVE_ACCEL = 1f;
-    const float SLIDE_SPEED = 20f;
+    const float SLIDE_SPEED = 30f;
     const float ANGULAR_DRAG_FLAT = 3f;
     const float ANGULAR_DRAG_SLOPE = 0f;
     const float SLOPE_ANGLE = 5f;
-    const int SLIDE_TIME = 30;
+    const int SLIDE_TIME = 35;
     const float ROTATE_SPEED = 250f;
     const float GRAVITY = 50f;
 
@@ -89,31 +89,16 @@ public class Player : MonoBehaviour
         // Restart level
         if (Input.GetKeyDown(KeyCode.R))
         {
-            int sceneIndex = SceneManager.GetActiveScene().buildIndex;
-            SceneManager.LoadScene(sceneIndex);
+            RestartLevel();
         }
-
-        // Roll
-        /*
-        if (Input.GetKeyDown(KeyCode.LeftShift))
-        {
-            if (GetState() != PlayerState.ROLL)
-            {
-                SetState(PlayerState.ROLL);
-            }
-            else
-            {
-                SetState(PlayerState.WALK);
-            }
-        }
-        */
 
         // Slide
         if (Input.GetKeyDown(KeyCode.LeftShift))
         {
-            // Slide if there is sufficient butter
-            //SetState(PlayerState.SLIDE);
-            Slide();
+            if (IsGrounded())
+            {
+                Slide();
+            }
         }
 
         if (Input.GetKeyDown(KeyCode.Space))
@@ -123,6 +108,12 @@ public class Player : MonoBehaviour
                 Jump();
             }
         }
+    }
+
+    void RestartLevel()
+    {
+        int sceneIndex = SceneManager.GetActiveScene().buildIndex;
+        SceneManager.LoadScene(sceneIndex);
     }
 
     void UpdateStateTimers()
@@ -219,6 +210,12 @@ public class Player : MonoBehaviour
                     //Slide();
                     break;
             }
+        }
+
+        const float KILL_FLOOR = -50f;
+        if (transform.position.y < KILL_FLOOR)
+        {
+            RestartLevel();
         }
     }
 
